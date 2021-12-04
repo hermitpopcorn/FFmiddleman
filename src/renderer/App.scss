@@ -1,0 +1,61 @@
+:root {
+	--gap: 1em;
+}
+
+html, body, fieldset { padding: 0; margin: 0; border: 0; }
+
+body {
+	font-family: sans-serif;
+	padding: var(--gap);
+}
+
+h1 {
+	margin: 0;
+}
+
+button {
+	padding: 1em;
+}
+
+nav.tabs {
+	display: grid;
+	column-gap: var(--gap);
+	grid-template-columns: auto auto;
+	margin-bottom: var(--gap);
+}
+
+fieldset {
+	width: 100%;
+	display: grid;
+	column-gap: var(--gap);
+	row-gap: var(--gap);
+	margin-bottom: var(--gap);
+
+	&.file-selector {
+		grid-template-columns: auto 6em;
+		select {
+			min-height: 6em;
+		}
+	}
+	&.cut-from-to {
+		grid-template-columns: auto auto;
+	}
+}
+
+label span {
+	display: block;
+}
+
+input, textarea {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+textarea.output {
+	height: 20vh;
+	font-size: 0.8em;
+}
+
+fieldset.submit {
+	justify-items: end;
+}
