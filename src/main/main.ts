@@ -13,10 +13,11 @@ import 'regenerator-runtime/runtime';
 import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import log from 'electron-log';
-import { ChildProcess, exec, spawn } from 'child_process';
+import { ChildProcess, spawn, spawnSync } from 'child_process';
 import { existsSync } from 'fs';
+import { exit } from 'process';
 import { FFmpegParameters } from './interfaces';
-import { pieceFilename, resolveHtmlPath } from './util';
+import { pieceFilename, resolveHtmlPath, timecodeToSeconds } from './util';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -141,10 +142,12 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			const file = args.files[index];
 			const workingDirectory = path.dirname(file);
 
+			// Write output header
 			event.reply('write-output', `${'='.repeat(20)}\r\n`);
 			event.reply('write-output', `Processing ${file}...\r\n`);
 			event.reply('write-output', `${'='.repeat(20)}\r\n`);
 
+			// Determine destination filename and check
 			const destination = pieceFilename(file, args.suffix, args.format);
 			const destinationPath = path.join(workingDirectory, destination);
 			if (existsSync(destinationPath)) {
@@ -163,9 +166,34 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 				}
 			}
 
+			// Determine progress by duration
+			if (args.cut) {
+				event.reply(
+					'progress-total-duration',
+					timecodeToSeconds(args.cut.to) - timecodeToSeconds(args.cut.from)
+				);
+			} else if (args.hardsub) {
+				const prober = spawnSync(
+					'ffprobe',
+					['-i', path.basename(file), '-show_format'],
+					{
+						cwd: path.resolve(workingDirectory),
+					}
+				);
+				const matchResult = prober.stdout
+					.toString()
+					.match(/duration=([0-9.]+)/);
+				let duration = 0;
+				if (matchResult) {
+					duration = Math.ceil(Number(matchResult[1]));
+				}
+				event.reply('progress-total-duration', duration);
+			}
+
+			// Piece together arguments
 			const ffmpegArguments = new Array<string>();
 			ffmpegArguments.push('-i');
-			ffmpegArguments.push(`${path.basename(file)}`);
+			ffmpegArguments.push(path.basename(file));
 			if (args.cut) {
 				ffmpegArguments.push('-ss');
 				ffmpegArguments.push(`${args.cut.from}`);
@@ -188,11 +216,6 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			ffmpegArguments.push('-y');
 			ffmpegArguments.push(`${destination}`);
 
-			console.log(workingDirectory);
-			console.log(
-				[`cd "${workingDirectory}" &&`, 'ffmpeg', ...ffmpegArguments].join(' ')
-			);
-
 			const child: ChildProcess = spawn('ffmpeg', ffmpegArguments, {
 				cwd: path.resolve(workingDirectory),
 			});
@@ -206,6 +229,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 		});
 		promise
 			.then((finishedIndex) => {
+				event.reply('one-done');
 				// If next
 				if (finishedIndex + 1 < args.files.length) {
 					// eslint-disable-next-line promise/no-callback-in-promise

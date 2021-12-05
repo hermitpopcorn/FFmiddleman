@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { MemoryRouter as Router, Switch, Route } from 'react-router-dom';
 import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from 'react';
+import { timecodeToSeconds } from './util';
 import { FFmpegParameters } from '../main/interfaces';
 import './App.scss';
 
@@ -26,7 +27,14 @@ const Main = () => {
 	const [output, setOutput] = useState('');
 	const outputTextArea = useRef<HTMLTextAreaElement>(null);
 	const [processing, setProcessing] = useState(false);
+	const [progress, setProgress] = useState({
+		fileProgress: 0,
+		fileMax: 0,
+		jobProgress: 0,
+		jobMax: 0,
+	});
 
+	// Attach ip listeners (and remove old ones)
 	useEffect(() => {
 		// Handle opened files
 		const removeEventListeners = new Array<() => void>();
@@ -41,12 +49,38 @@ const Main = () => {
 		);
 
 		removeEventListeners.push(
+			window.electron.api.on('progress-total-duration', (duration: number) => {
+				setProgress({ ...progress, fileMax: duration });
+			})
+		);
+
+		removeEventListeners.push(
 			window.electron.api.on('write-output', (message: string) => {
 				setOutput((prevData) => prevData + message);
+
+				// Check for progress
+				const checkProgress = message.match(
+					/time=([0-9]+:[0-5][0-9]:[0-5][0-9])(.[0-9]+)?/
+				);
+				if (checkProgress) {
+					checkProgress.shift();
+					const currentDuration = Math.ceil(
+						timecodeToSeconds(checkProgress.join(''))
+					);
+					setProgress({ ...progress, fileProgress: currentDuration });
+				}
+
+				// Scroll
 				const area: HTMLTextAreaElement | null = outputTextArea.current;
 				if (area) {
 					area.scrollTop = area.scrollHeight;
 				}
+			})
+		);
+
+		removeEventListeners.push(
+			window.electron.api.on('one-done', () => {
+				setProgress({ ...progress, jobProgress: progress.jobProgress + 1 });
 			})
 		);
 
@@ -62,7 +96,7 @@ const Main = () => {
 				remover();
 			});
 		};
-	}, [files]);
+	});
 
 	// Allow dropping files
 	window.ondragover = (e) => e.preventDefault();
@@ -115,9 +149,18 @@ const Main = () => {
 				result += '00:';
 			}
 			split.forEach((i) => {
-				result += `${i}:`;
+				const pad = Number(i) < 10;
+				result += `${pad ? '0' : ''}${Number(i)}:`;
 			});
+			// Remove trailing :
 			timecode = result.substr(0, result.length - 1);
+		}
+
+		// Check against regex
+		// eslint-disable-next-line prettier/prettier
+		const testRegex = new RegExp(/^([0-9]+):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?$/);
+		if (!testRegex.test(timecode)) {
+			timecode = '00:00:00';
 		}
 
 		e.target.value = timecode;
@@ -157,6 +200,16 @@ const Main = () => {
 				return null;
 			}
 		}
+	};
+
+	const readyProcessUI = () => {
+		setProcessing(true);
+		setProgress({
+			fileProgress: 0,
+			fileMax: 1,
+			jobProgress: 0,
+			jobMax: files.length,
+		});
 	};
 
 	return (
@@ -298,11 +351,14 @@ const Main = () => {
 			/>
 
 			<fieldset className="submit">
+				<progress value={progress.fileProgress} max={progress.fileMax} />
+				<progress value={progress.jobProgress} max={progress.jobMax} />
 				<button
+					id="process"
 					type="button"
 					disabled={files.length < 1 || processing}
 					onClick={() => {
-						setProcessing(true);
+						readyProcessUI();
 						window.electron.api.process(compileParameters());
 					}}
 				>

@@ -5,7 +5,9 @@ const validChannels = [
 	'add-files',
 	'open-file-dialog',
 	'process-ffmpeg',
+	'progress-total-duration',
 	'write-output',
+	'one-done',
 	'all-done',
 ];
 
