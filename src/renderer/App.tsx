@@ -214,7 +214,6 @@ const Main = () => {
 
 	return (
 		<div>
-			<h1>FFmiddleman</h1>
 			<fieldset className="file-selector">
 				<select multiple onKeyUp={handleDeletion}>
 					{files.map((file, index) => {

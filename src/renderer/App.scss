@@ -9,10 +9,6 @@ body {
 	padding: var(--gap);
 }
 
-h1 {
-	margin: 0;
-}
-
 button {
 	padding: 1em;
 }
@@ -58,7 +54,7 @@ input, textarea {
 }
 
 textarea.output {
-	height: 20vh;
+	height: 25vh;
 	font-size: 0.8em;
 }
 

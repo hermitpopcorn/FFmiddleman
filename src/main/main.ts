@@ -14,12 +14,13 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import log from 'electron-log';
 import { ChildProcess, spawn, spawnSync } from 'child_process';
+import treeKill from 'tree-kill';
 import { existsSync } from 'fs';
-import { exit } from 'process';
 import { FFmpegParameters } from './interfaces';
 import { pieceFilename, resolveHtmlPath, timecodeToSeconds } from './util';
 
 let mainWindow: BrowserWindow | null = null;
+let runningFFmpegProcess: ChildProcess | null = null;
 
 if (process.env.NODE_ENV === 'production') {
 	const sourceMapSupport = require('source-map-support');
@@ -81,6 +82,29 @@ const createWindow = async () => {
 			mainWindow.minimize();
 		} else {
 			mainWindow.show();
+		}
+	});
+
+	mainWindow.on('close', (e) => {
+		if (runningFFmpegProcess) {
+			const confirm = dialog.showMessageBoxSync({
+				message: `There is a job in progress. Kill the FFmpeg instance and close anyway?`,
+				type: 'warning',
+				buttons: ['Close', 'Resume'],
+				noLink: true,
+				defaultId: 1,
+				title: 'Confirm close',
+				cancelId: 1,
+			});
+			if (confirm === 1) {
+				e.preventDefault();
+			} else {
+				// eslint-disable-next-line no-lonely-if
+				if (runningFFmpegProcess.pid) {
+					const { pid } = runningFFmpegProcess;
+					treeKill(pid);
+				}
+			}
 		}
 	});
 
@@ -155,6 +179,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 					message: `Destination file ${destinationPath} already exists. Overwrite?`,
 					type: 'question',
 					buttons: ['Overwrite', 'Skip this file'],
+					noLink: true,
 					defaultId: 1,
 					title: 'Confirm overwrite',
 					cancelId: 1,
@@ -217,13 +242,18 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			ffmpegArguments.push(`${destination}`);
 
 			const child: ChildProcess = spawn('ffmpeg', ffmpegArguments, {
+				detached: false,
 				cwd: path.resolve(workingDirectory),
 			});
+			setTimeout(() => console.log(child.pid), 2000);
+			runningFFmpegProcess = child;
 			child.stderr?.setEncoding('utf8');
 			child.stderr?.on('data', (data) => {
 				event.reply('write-output', data);
 			});
 			child.on('close', () => {
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+				runningFFmpegProcess = null;
 				return resolve(index);
 			});
 		});
