@@ -86,8 +86,8 @@ const createWindow = async () => {
 	});
 
 	mainWindow.on('close', (e) => {
-		if (runningFFmpegProcess) {
-			const confirm = dialog.showMessageBoxSync({
+		if (runningFFmpegProcess && mainWindow) {
+			const confirm = dialog.showMessageBoxSync(mainWindow, {
 				message: `There is a job in progress. Kill the FFmpeg instance and close anyway?`,
 				type: 'warning',
 				buttons: ['Close', 'Resume'],
@@ -162,7 +162,12 @@ ipcMain.on('open-file-dialog', async (event) => {
 
 ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 	const next = (index: number) => {
-		const promise = new Promise<number>((resolve) => {
+		const promise = new Promise<number>((resolve, reject) => {
+			if (!mainWindow) {
+				reject();
+				return;
+			}
+
 			const file = args.files[index];
 			const workingDirectory = path.dirname(file);
 
@@ -175,7 +180,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			const destination = pieceFilename(file, args.suffix, args.format);
 			const destinationPath = path.join(workingDirectory, destination);
 			if (existsSync(destinationPath)) {
-				const confirm = dialog.showMessageBoxSync({
+				const confirm = dialog.showMessageBoxSync(mainWindow, {
 					message: `Destination file ${destinationPath} already exists. Overwrite?`,
 					type: 'question',
 					buttons: ['Overwrite', 'Skip this file'],
