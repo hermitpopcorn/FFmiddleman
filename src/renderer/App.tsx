@@ -25,7 +25,7 @@ const Main = () => {
 		crf: 20,
 		hevcSuffix: '.h265',
 		additionalArguments: '',
-		format: '',
+		format: 'mp4',
 	});
 	const [output, setOutput] = useState('');
 	const outputTextArea = useRef<HTMLTextAreaElement>(null);

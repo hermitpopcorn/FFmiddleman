@@ -40,12 +40,10 @@ fieldset {
 	}
 
 	&.file-selector {
+		display: grid;
+		grid-template-columns: auto min-content;
 		select {
 			min-height: 6em;
-			flex-grow: 1;
-		}
-		button {
-			flex-grow: 0;
 		}
 	}
 	&.hevc-settings {
