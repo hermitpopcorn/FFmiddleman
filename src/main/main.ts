@@ -196,9 +196,9 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			const workingDirectory = path.dirname(file);
 
 			// Write output header
-			event.reply('write-output', `${'='.repeat(20)}\r\n`);
+			event.reply('write-output', `${'='.repeat(40)}\r\n`);
 			event.reply('write-output', `Processing ${file}...\r\n`);
-			event.reply('write-output', `${'='.repeat(20)}\r\n`);
+			event.reply('write-output', `${'='.repeat(40)}\r\n`);
 
 			// Determine destination filename and check
 			const destination = pieceFilename(file, args.suffix, args.format);
@@ -226,7 +226,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 					'progress-total-duration',
 					timecodeToSeconds(args.cut.to) - timecodeToSeconds(args.cut.from)
 				);
-			} else if (args.hardsub) {
+			} else {
 				const prober = spawnSync(
 					'ffprobe',
 					['-i', path.basename(file), '-show_format'],
@@ -262,6 +262,20 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 				);
 				ffmpegArguments.push('-vf');
 				ffmpegArguments.push(`subtitles=${subfile}`);
+			}
+			if (args.hevc) {
+				ffmpegArguments.push('-c:v');
+				ffmpegArguments.push('libx265');
+				ffmpegArguments.push('-c:a');
+				ffmpegArguments.push('copy');
+				if (args.hevc.preset) {
+					ffmpegArguments.push('-preset');
+					ffmpegArguments.push(String(args.hevc.preset));
+				}
+				if (args.hevc.crf) {
+					ffmpegArguments.push('-crf');
+					ffmpegArguments.push(String(args.hevc.crf));
+				}
 			}
 			if (args.additionalArguments) {
 				const splitAdditionalArguments = args.additionalArguments.split(' ');

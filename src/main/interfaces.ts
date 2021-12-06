@@ -7,6 +7,10 @@ export interface FFmpegParameters {
 	hardsub?: {
 		subfileExtension: string;
 	};
+	hevc?: {
+		preset?: string;
+		crf?: number;
+	};
 	suffix?: string;
 	additionalArguments?: string;
 	format?: string;

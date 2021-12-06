@@ -16,7 +16,7 @@ button {
 nav.tabs {
 	display: grid;
 	column-gap: var(--gap);
-	grid-template-columns: auto auto;
+	grid-template-columns: auto auto auto;
 	margin-bottom: var(--gap);
 }
 
@@ -34,6 +34,10 @@ fieldset {
 	}
 	&.cut-from-to {
 		grid-template-columns: auto auto;
+	}
+	&.hevc-settings {
+		grid-template-columns: auto auto;
+		select { width: 100%; }
 	}
 	&.submit {
 		grid-template-columns: min-content 1fr 1fr;

@@ -21,6 +21,9 @@ const Main = () => {
 		cutSuffix: '.cut1',
 		subfileExtension: 'ass',
 		hardsubSuffix: '.hardsub',
+		preset: 'medium',
+		crf: 20,
+		hevcSuffix: '.h265',
 		additionalArguments: '',
 		format: '',
 	});
@@ -127,7 +130,8 @@ const Main = () => {
 		}
 	};
 
-	const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+	// eslint-disable-next-line prettier/prettier
+	const handleInputChange = (e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>) => {
 		const { name, value } = e.target;
 		setInputValues({ ...inputValues, [name]: value });
 	};
@@ -196,6 +200,19 @@ const Main = () => {
 				};
 				return parameters;
 			}
+			case 'hevc': {
+				parameters = {
+					files,
+					hevc: {
+						preset: inputValues.preset,
+						crf: inputValues.crf,
+					},
+					suffix: inputValues.hevcSuffix,
+					additionalArguments: inputValues.additionalArguments,
+					format: inputValues.format,
+				};
+				return parameters;
+			}
 			default: {
 				return null;
 			}
@@ -238,6 +255,9 @@ const Main = () => {
 				<button type="button" onClick={() => setVisibleTab('hardsub')}>
 					Hardsub
 				</button>
+				<button type="button" onClick={() => setVisibleTab('hevc')}>
+					HEVC Conversion
+				</button>
 			</nav>
 
 			<section
@@ -253,7 +273,7 @@ const Main = () => {
 							name="from"
 							id="cut-from"
 							type="text"
-							defaultValue={inputValues.from}
+							value={inputValues.from}
 							onChange={handleInputChange}
 							onBlur={handleTimecodeInputBlur}
 						/>
@@ -264,7 +284,7 @@ const Main = () => {
 							name="to"
 							id="cut-to"
 							type="text"
-							defaultValue={inputValues.to}
+							value={inputValues.to}
 							onChange={handleInputChange}
 							onBlur={handleTimecodeInputBlur}
 						/>
@@ -277,7 +297,7 @@ const Main = () => {
 							name="cutSuffix"
 							id="cut-suffix"
 							type="text"
-							defaultValue={inputValues.cutSuffix}
+							value={inputValues.cutSuffix}
 							onChange={handleInputChange}
 						/>
 					</label>
@@ -297,7 +317,7 @@ const Main = () => {
 							name="subfileExtension"
 							id="hardsub-subfile-extension"
 							type="text"
-							defaultValue={inputValues.subfileExtension}
+							value={inputValues.subfileExtension}
 							onChange={handleInputChange}
 						/>
 					</label>
@@ -309,7 +329,58 @@ const Main = () => {
 							name="hardsubSuffix"
 							id="hardsub-suffix"
 							type="text"
-							defaultValue={inputValues.hardsubSuffix}
+							value={inputValues.hardsubSuffix}
+							onChange={handleInputChange}
+						/>
+					</label>
+				</fieldset>
+			</section>
+
+			<section
+				id="tab-hevc"
+				style={
+					visibleTab === 'hevc' ? { display: 'block' } : { display: 'none' }
+				}
+			>
+				<fieldset className="hevc-settings">
+					<label htmlFor="hevc-preset">
+						<span>Preset</span>
+						<select
+							name="preset"
+							id="hevc-preset"
+							value={inputValues.preset}
+							onChange={handleInputChange}
+						>
+							<option value="ultrafast">ultrafast</option>
+							<option value="superfast">superfast</option>
+							<option value="veryfast">veryfast</option>
+							<option value="faster">faster</option>
+							<option value="fast">fast</option>
+							<option value="medium">medium</option>
+							<option value="slow">slow</option>
+							<option value="slower">slower</option>
+							<option value="veryslow ">veryslow </option>
+						</select>
+					</label>
+					<label htmlFor="hevc-crf">
+						<span>CRF</span>
+						<input
+							name="crf"
+							id="hevc-crf"
+							type="text"
+							value={inputValues.crf}
+							onChange={handleInputChange}
+						/>
+					</label>
+				</fieldset>
+				<fieldset>
+					<label htmlFor="hevc-suffix">
+						<span>Suffix</span>
+						<input
+							name="hevcSuffix"
+							id="hevc-suffix"
+							type="text"
+							value={inputValues.hevcSuffix}
 							onChange={handleInputChange}
 						/>
 					</label>
@@ -323,7 +394,7 @@ const Main = () => {
 						name="additionalArguments"
 						id="additional-arguments"
 						type="text"
-						defaultValue={inputValues.additionalArguments}
+						value={inputValues.additionalArguments}
 						onChange={handleInputChange}
 					/>
 				</label>
@@ -336,7 +407,7 @@ const Main = () => {
 						name="format"
 						id="format"
 						type="text"
-						defaultValue={inputValues.format}
+						value={inputValues.format}
 						onChange={handleInputChange}
 					/>
 				</label>
