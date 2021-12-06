@@ -413,12 +413,14 @@ const Main = () => {
 				</label>
 			</fieldset>
 
-			<textarea
-				readOnly
-				ref={outputTextArea}
-				className="output"
-				value={output}
-			/>
+			<fieldset>
+				<textarea
+					readOnly
+					ref={outputTextArea}
+					className="output"
+					value={output}
+				/>
+			</fieldset>
 
 			<fieldset className="submit">
 				<button

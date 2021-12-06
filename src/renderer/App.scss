@@ -14,37 +14,72 @@ button {
 }
 
 nav.tabs {
-	display: grid;
-	column-gap: var(--gap);
-	grid-template-columns: auto auto auto;
+	display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  align-content: stretch;
+	gap: var(--gap);
 	margin-bottom: var(--gap);
+  > button {
+		flex-grow: 1;
+		flex-shrink: 1;
+		flex-basis: 0;
+	}
 }
 
 fieldset {
 	width: 100%;
-	display: grid;
+	display: flex;
+	flex-wrap: wrap;
 	column-gap: var(--gap);
 	margin-bottom: var(--gap);
+	> * {
+		flex-grow: 1;
+	}
 
 	&.file-selector {
-		grid-template-columns: auto 6em;
 		select {
 			min-height: 6em;
+			flex-grow: 1;
+		}
+		button {
+			flex-grow: 0;
 		}
 	}
-	&.cut-from-to {
-		grid-template-columns: auto auto;
-	}
 	&.hevc-settings {
-		grid-template-columns: auto auto;
-		select { width: 100%; }
+		select {
+			width: 100%;
+		}
 	}
 	&.submit {
-		grid-template-columns: min-content 1fr 1fr;
+		display: grid;
+		grid-template-columns: min-content 3fr 1fr;
 		grid-template-rows: 1fr 1fr;
 		grid-template-areas:
 			"pp pb1 botan"
 			"pp pb2 botan";
+		progress {
+			width: 100%;
+			height: 100%;
+			align-self: center;
+
+			&#file {
+				grid-area: pb1;
+			}
+			&#job {
+				grid-area: pb2;
+			}
+		}
+		button#pause {
+			grid-area: pp;
+			font-family: -webkit-pictograph;
+		}
+		button#process {
+			grid-area: botan;
+			flex-grow: 0;
+		}
 	}
 }
 
@@ -60,24 +95,4 @@ input, textarea {
 textarea.output {
 	height: 25vh;
 	font-size: 0.8em;
-}
-
-progress {
-	width: 100%;
-	height: 100%;
-	align-self: center;
-
-	&#file {
-		grid-area: pb1;
-	}
-	&#job {
-		grid-area: pb2;
-	}
-}
-button#pause {
-	grid-area: pp;
-	font-family: -webkit-pictograph;
-}
-button#process {
-	grid-area: botan;
 }
