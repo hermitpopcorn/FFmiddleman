@@ -13,6 +13,10 @@ export default {
 
   module: {
     rules: [
+			{
+				test: /\.node$/,
+				loader: "node-loader",
+			},
       {
         test: /\.[jt]sx?$/,
         exclude: /node_modules/,
