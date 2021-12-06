@@ -350,6 +350,15 @@ const Main = () => {
 			/>
 
 			<fieldset className="submit">
+				<button
+					id="pause"
+					type="button"
+					onClick={() => {
+						window.electron.api.pauseResume();
+					}}
+				>
+					⏯
+				</button>
 				<progress value={progress.fileProgress} max={progress.fileMax} />
 				<progress value={progress.jobProgress} max={progress.jobMax} />
 				<button

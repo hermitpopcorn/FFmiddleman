@@ -15,6 +15,8 @@ import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import log from 'electron-log';
 import { ChildProcess, spawn, spawnSync } from 'child_process';
 import treeKill from 'tree-kill';
+import psTree from 'ps-tree';
+import { suspend, resume } from 'ntsuspend';
 import { existsSync } from 'fs';
 import { FFmpegParameters } from './interfaces';
 import { pieceFilename, resolveHtmlPath, timecodeToSeconds } from './util';
@@ -160,6 +162,28 @@ ipcMain.on('open-file-dialog', async (event) => {
 		});
 });
 
+let pauseStatus = false;
+ipcMain.on('pause-ffmpeg', async (event) => {
+	if (runningFFmpegProcess?.pid) {
+		psTree(runningFFmpegProcess.pid, (err, children) => {
+			children.forEach((i) => {
+				if (!i.COMMAND.match(/ffmpeg/)) {
+					return;
+				}
+
+				if (!pauseStatus) {
+					console.log(i.PID);
+					suspend(Number(i.PID));
+					pauseStatus = true;
+				} else {
+					resume(Number(i.PID));
+					pauseStatus = false;
+				}
+			});
+		});
+	}
+});
+
 ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 	const next = (index: number) => {
 		const promise = new Promise<number>((resolve, reject) => {
@@ -246,11 +270,11 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			ffmpegArguments.push('-y');
 			ffmpegArguments.push(`${destination}`);
 
+			pauseStatus = false;
 			const child: ChildProcess = spawn('ffmpeg', ffmpegArguments, {
 				detached: false,
 				cwd: path.resolve(workingDirectory),
 			});
-			setTimeout(() => console.log(child.pid), 2000);
 			runningFFmpegProcess = child;
 			child.stderr?.setEncoding('utf8');
 			child.stderr?.on('data', (data) => {

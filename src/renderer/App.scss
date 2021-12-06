@@ -36,11 +36,11 @@ fieldset {
 		grid-template-columns: auto auto;
 	}
 	&.submit {
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: min-content 1fr 1fr;
 		grid-template-rows: 1fr 1fr;
 		grid-template-areas:
-			"pb1 botan"
-			"pb2 botan";
+			"pp pb1 botan"
+			"pp pb2 botan";
 	}
 }
 
@@ -69,6 +69,10 @@ progress {
 	&#job {
 		grid-area: pb2;
 	}
+}
+button#pause {
+	grid-area: pp;
+	font-family: -webkit-pictograph;
 }
 button#process {
 	grid-area: botan;

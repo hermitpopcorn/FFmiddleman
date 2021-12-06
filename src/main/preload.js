@@ -5,6 +5,7 @@ const validChannels = [
 	'add-files',
 	'open-file-dialog',
 	'process-ffmpeg',
+	'pause-ffmpeg',
 	'progress-total-duration',
 	'write-output',
 	'one-done',
@@ -24,6 +25,9 @@ contextBridge.exposeInMainWorld('electron', {
 				return;
 			}
 			ipcRenderer.send('process-ffmpeg', parameters);
+		},
+		pauseResume() {
+			ipcRenderer.send('pause-ffmpeg');
 		},
 		on(channel, func) {
 			if (validChannels.includes(channel)) {
