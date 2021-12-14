@@ -163,9 +163,14 @@ ipcMain.on('open-file-dialog', async (event) => {
 });
 
 let pauseStatus = false;
-ipcMain.on('pause-ffmpeg', async (event) => {
+ipcMain.on('pause-ffmpeg', async () => {
 	if (runningFFmpegProcess?.pid) {
 		psTree(runningFFmpegProcess.pid, (err, children) => {
+			if (err) {
+				console.error(err);
+				return;
+			}
+
 			children.forEach((i) => {
 				if (!i.COMMAND.match(/ffmpeg/)) {
 					return;
