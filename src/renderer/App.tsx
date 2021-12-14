@@ -20,9 +20,9 @@ const Main = () => {
 		to: '00:00:00',
 		subfileExtension: 'ass',
 		preset: 'medium',
-		crf: undefined,
-		avgBitrate: undefined,
-		bufsize: undefined,
+		crf: 0,
+		avgBitrate: '',
+		bufsize: '',
 		suffix: '.processed',
 		additionalArguments: '',
 		format: 'mp4',
@@ -37,10 +37,179 @@ const Main = () => {
 		jobMax: 0,
 	});
 
+	const compileParameters = (getAll = false): FFmpegParameters | null => {
+		const parameters: FFmpegParameters = {
+			files,
+			suffix: inputValues.suffix,
+			additionalArguments: inputValues.additionalArguments,
+			format: inputValues.format,
+		};
+
+		if (actions.includes('cut') || getAll) {
+			parameters.cut = {
+				from: inputValues.from,
+				to: inputValues.to,
+			};
+		}
+		if (actions.includes('hardsub') || getAll) {
+			parameters.hardsub = {
+				subfileExtension: inputValues.subfileExtension,
+			};
+		}
+		if (actions.includes('hevc') || getAll) {
+			parameters.hevc = {
+				preset: inputValues.preset,
+				crf: Number(inputValues.crf),
+				avgBitrate: inputValues.avgBitrate,
+				bufsize: inputValues.bufsize,
+			};
+		}
+
+		return parameters;
+	};
+
+	const toggleAction = (action: string) => {
+		if (actions.includes(action)) {
+			setActions(actions.filter((el) => el !== action));
+		} else {
+			setActions([...actions, action]);
+		}
+	};
+
+	const readyProcessUI = () => {
+		setProcessing(true);
+		setProgress({
+			fileProgress: 0,
+			fileMax: 1,
+			jobProgress: 0,
+			jobMax: files.length,
+		});
+	};
+
+	// Allow dropping files
+	window.ondragover = (e) => e.preventDefault();
+	// Handle drop
+	window.ondrop = (e) => {
+		e.preventDefault();
+		if (e.dataTransfer == null) {
+			return;
+		}
+		if (e.dataTransfer.files.length > 0) {
+			Array.from(e.dataTransfer.files).forEach((i) => {
+				if (!files.includes(i.path)) {
+					setFiles((prevData) => [...prevData, i.path]);
+				}
+			});
+		}
+	};
+
+	const handleDeletion = (e: KeyboardEvent<HTMLSelectElement>) => {
+		if (['delete', 'backspace'].includes(e.key.toLowerCase())) {
+			Array.from((e.target as HTMLSelectElement).selectedOptions).map(
+				(selectedOption: HTMLOptionElement) => {
+					return setFiles((prevData) =>
+						prevData.filter((i) => i !== selectedOption.value)
+					);
+				}
+			);
+		}
+	};
+
+	// eslint-disable-next-line prettier/prettier
+	const handleInputChange = (e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>) => {
+		const { name, value } = e.target;
+		setInputValues({ ...inputValues, [name]: value });
+	};
+
+	// eslint-disable-next-line prettier/prettier
+	const handleInputBlur = () => {
+		window.electron.api.sendFields(compileParameters(true));
+	};
+
+	const handleTimecodeInputBlur = (e: ChangeEvent<HTMLInputElement>) => {
+		const { name, value } = e.target;
+		let timecode = value;
+
+		if (timecode.length < 1) {
+			timecode = '00:00:00';
+		} else {
+			let result = '';
+			const split = timecode.split(':');
+			for (
+				let missingSegments = 3 - split.length;
+				missingSegments > 0;
+				missingSegments -= 1
+			) {
+				result += '00:';
+			}
+			split.forEach((i) => {
+				const pad = Number(i) < 10;
+				result += `${pad ? '0' : ''}${Number(i)}:`;
+			});
+			// Remove trailing :
+			timecode = result.substr(0, result.length - 1);
+		}
+
+		// Check against regex
+		// eslint-disable-next-line prettier/prettier
+		const testRegex = new RegExp(/^([0-9]+):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?$/);
+		if (!testRegex.test(timecode)) {
+			timecode = '00:00:00';
+		}
+
+		e.target.value = timecode;
+		setInputValues({ ...inputValues, [name]: timecode });
+	};
+
+	const [forceUpdater, setForceUpdater] = useState(0);
+	const forceUpdate = () => {
+		setForceUpdater(forceUpdater + 1);
+	};
+
 	// Attach ip listeners (and remove old ones)
 	useEffect(() => {
-		// Handle opened files
 		const removeEventListeners = new Array<() => void>();
+
+		// Receive defaults
+		removeEventListeners.push(
+			window.electron.api.on('set-fields', (defaults: FFmpegParameters) => {
+				const newInputValues = inputValues;
+				if (defaults.cut?.from) {
+					newInputValues.from = defaults.cut.from;
+				}
+				if (defaults.cut?.to) {
+					newInputValues.to = defaults.cut.to;
+				}
+				if (defaults.hardsub?.subfileExtension) {
+					newInputValues.subfileExtension = defaults.hardsub.subfileExtension;
+				}
+				if (defaults.hevc?.preset) {
+					newInputValues.preset = defaults.hevc.preset;
+				}
+				if (defaults.hevc?.crf) {
+					newInputValues.crf = defaults.hevc.crf;
+				}
+				if (defaults.hevc?.avgBitrate) {
+					newInputValues.avgBitrate = defaults.hevc.avgBitrate;
+				}
+				if (defaults.hevc?.bufsize) {
+					newInputValues.bufsize = defaults.hevc.bufsize;
+				}
+				if (defaults.suffix) {
+					newInputValues.suffix = defaults.suffix;
+				}
+				if (defaults.additionalArguments) {
+					newInputValues.additionalArguments = defaults.additionalArguments;
+				}
+				if (defaults.format) {
+					newInputValues.format = defaults.format;
+				}
+				setInputValues(newInputValues);
+				forceUpdate();
+			})
+		);
+
+		// Handle opened files
 		removeEventListeners.push(
 			window.electron.api.on('open-file-dialog', (arg: string[]) => {
 				arg.forEach((path) => {
@@ -105,130 +274,6 @@ const Main = () => {
 		};
 	});
 
-	// Allow dropping files
-	window.ondragover = (e) => e.preventDefault();
-	// Handle drop
-	window.ondrop = (e) => {
-		e.preventDefault();
-		if (e.dataTransfer == null) {
-			return;
-		}
-		if (e.dataTransfer.files.length > 0) {
-			Array.from(e.dataTransfer.files).forEach((i) => {
-				if (!files.includes(i.path)) {
-					setFiles((prevData) => [...prevData, i.path]);
-				}
-			});
-		}
-	};
-
-	const handleDeletion = (e: KeyboardEvent<HTMLSelectElement>) => {
-		if (['delete', 'backspace'].includes(e.key.toLowerCase())) {
-			Array.from((e.target as HTMLSelectElement).selectedOptions).map(
-				(selectedOption: HTMLOptionElement) => {
-					return setFiles((prevData) =>
-						prevData.filter((i) => i !== selectedOption.value)
-					);
-				}
-			);
-		}
-	};
-
-	// eslint-disable-next-line prettier/prettier
-	const handleInputChange = (e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>) => {
-		const { name, value } = e.target;
-		setInputValues({ ...inputValues, [name]: value });
-	};
-
-	const handleTimecodeInputBlur = (e: ChangeEvent<HTMLInputElement>) => {
-		const { name, value } = e.target;
-		let timecode = value;
-
-		if (timecode.length < 1) {
-			timecode = '00:00:00';
-		} else {
-			let result = '';
-			const split = timecode.split(':');
-			for (
-				let missingSegments = 3 - split.length;
-				missingSegments > 0;
-				missingSegments -= 1
-			) {
-				result += '00:';
-			}
-			split.forEach((i) => {
-				const pad = Number(i) < 10;
-				result += `${pad ? '0' : ''}${Number(i)}:`;
-			});
-			// Remove trailing :
-			timecode = result.substr(0, result.length - 1);
-		}
-
-		// Check against regex
-		// eslint-disable-next-line prettier/prettier
-		const testRegex = new RegExp(/^([0-9]+):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?$/);
-		if (!testRegex.test(timecode)) {
-			timecode = '00:00:00';
-		}
-
-		e.target.value = timecode;
-		setInputValues({ ...inputValues, [name]: timecode });
-	};
-
-	const compileParameters = (): FFmpegParameters | null => {
-		const parameters: FFmpegParameters = {
-			files,
-			suffix: inputValues.suffix,
-			additionalArguments: inputValues.additionalArguments,
-			format: inputValues.format,
-		};
-
-		if (actions.includes('cut')) {
-			parameters.cut = {
-				from: inputValues.from,
-				to: inputValues.to,
-			};
-		}
-		if (actions.includes('hardsub')) {
-			parameters.hardsub = {
-				subfileExtension: inputValues.subfileExtension,
-			};
-		}
-		if (actions.includes('hardsub')) {
-			parameters.hardsub = {
-				subfileExtension: inputValues.subfileExtension,
-			};
-		}
-		if (actions.includes('hevc')) {
-			parameters.hevc = {
-				preset: inputValues.preset,
-				crf: inputValues.crf,
-				avgBitrate: inputValues.avgBitrate,
-				bufsize: inputValues.bufsize,
-			};
-		}
-
-		return parameters;
-	};
-
-	const toggleAction = (action: string) => {
-		if (actions.includes(action)) {
-			setActions(actions.filter((el) => el !== action));
-		} else {
-			setActions([...actions, action]);
-		}
-	};
-
-	const readyProcessUI = () => {
-		setProcessing(true);
-		setProgress({
-			fileProgress: 0,
-			fileMax: 1,
-			jobProgress: 0,
-			jobMax: files.length,
-		});
-	};
-
 	return (
 		<div className="container">
 			<div className="v-fixed">
@@ -288,7 +333,10 @@ const Main = () => {
 								type="text"
 								value={inputValues.from}
 								onChange={handleInputChange}
-								onBlur={handleTimecodeInputBlur}
+								onBlur={(e) => {
+									handleTimecodeInputBlur(e);
+									handleInputBlur();
+								}}
 							/>
 						</label>
 						<label htmlFor="cut-to">
@@ -299,7 +347,10 @@ const Main = () => {
 								type="text"
 								value={inputValues.to}
 								onChange={handleInputChange}
-								onBlur={handleTimecodeInputBlur}
+								onBlur={(e) => {
+									handleTimecodeInputBlur(e);
+									handleInputBlur();
+								}}
 							/>
 						</label>
 					</fieldset>
@@ -322,6 +373,7 @@ const Main = () => {
 								type="text"
 								value={inputValues.subfileExtension}
 								onChange={handleInputChange}
+								onBlur={handleInputBlur}
 							/>
 						</label>
 					</fieldset>
@@ -343,6 +395,7 @@ const Main = () => {
 								id="hevc-preset"
 								value={inputValues.preset}
 								onChange={handleInputChange}
+								onBlur={handleInputBlur}
 							>
 								<option value="ultrafast">ultrafast</option>
 								<option value="superfast">superfast</option>
@@ -360,9 +413,10 @@ const Main = () => {
 							<input
 								name="crf"
 								id="hevc-crf"
-								type="text"
-								value={inputValues.crf}
+								type="number"
+								value={inputValues.crf || ''}
 								onChange={handleInputChange}
+								onBlur={handleInputBlur}
 							/>
 						</label>
 						<label htmlFor="hevc-avgBitrate">
@@ -373,6 +427,7 @@ const Main = () => {
 								type="text"
 								value={inputValues.avgBitrate}
 								onChange={handleInputChange}
+								onBlur={handleInputBlur}
 							/>
 						</label>
 						<label htmlFor="hevc-bufsize">
@@ -383,6 +438,7 @@ const Main = () => {
 								type="text"
 								value={inputValues.bufsize}
 								onChange={handleInputChange}
+								onBlur={handleInputBlur}
 							/>
 						</label>
 					</fieldset>
@@ -397,6 +453,7 @@ const Main = () => {
 							type="text"
 							value={inputValues.suffix}
 							onChange={handleInputChange}
+							onBlur={handleInputBlur}
 						/>
 					</label>
 				</fieldset>
@@ -410,6 +467,7 @@ const Main = () => {
 							type="text"
 							value={inputValues.additionalArguments}
 							onChange={handleInputChange}
+							onBlur={handleInputBlur}
 						/>
 					</label>
 				</fieldset>
@@ -423,6 +481,7 @@ const Main = () => {
 							type="text"
 							value={inputValues.format}
 							onChange={handleInputChange}
+							onBlur={handleInputBlur}
 						/>
 					</label>
 				</fieldset>
@@ -447,6 +506,7 @@ const Main = () => {
 						onClick={() => {
 							window.electron.api.pauseResume();
 						}}
+						disabled={!processing}
 					>
 						⏯
 					</button>

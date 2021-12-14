@@ -18,9 +18,11 @@ import treeKill from 'tree-kill';
 import psTree from 'ps-tree';
 import { suspend, resume } from 'ntsuspend';
 import { existsSync } from 'fs';
+import { exit } from 'process';
 import { FFmpegParameters } from './interfaces';
 import { pieceFilename, resolveHtmlPath } from './util';
 import { timecodeToSeconds } from './helper';
+import store from './store';
 
 // Disable hardware acceleration
 app.disableHardwareAcceleration();
@@ -68,8 +70,8 @@ const createWindow = async () => {
 
 	mainWindow = new BrowserWindow({
 		show: false,
-		width: 800,
-		height: 725,
+		width: store.get('window.width') ?? 800,
+		height: store.get('window.height') ?? 725,
 		icon: getAssetPath('icon.png'),
 		webPreferences: {
 			preload: path.join(__dirname, 'preload.js'),
@@ -84,6 +86,18 @@ const createWindow = async () => {
 		if (!mainWindow) {
 			throw new Error('"mainWindow" is not defined');
 		}
+
+		if (store.get('input')) {
+			const defaults: FFmpegParameters = { files: new Array<string>() };
+			defaults.cut = store.get('input.cut');
+			defaults.hardsub = store.get('input.hardsub');
+			defaults.hevc = store.get('input.hevc');
+			defaults.suffix = store.get('input.suffix');
+			defaults.additionalArguments = store.get('input.additionalArguments');
+			defaults.format = store.get('input.format');
+			mainWindow?.webContents.send('set-fields', defaults);
+		}
+
 		if (process.env.START_MINIMIZED) {
 			mainWindow.minimize();
 		} else {
@@ -92,25 +106,31 @@ const createWindow = async () => {
 	});
 
 	mainWindow.on('close', (e) => {
-		if (runningFFmpegProcess && mainWindow) {
-			const confirm = dialog.showMessageBoxSync(mainWindow, {
-				message: `There is a job in progress. Kill the FFmpeg instance and close anyway?`,
-				type: 'warning',
-				buttons: ['Close', 'Resume'],
-				noLink: true,
-				defaultId: 1,
-				title: 'Confirm close',
-				cancelId: 1,
-			});
-			if (confirm === 1) {
-				e.preventDefault();
-			} else {
-				// eslint-disable-next-line no-lonely-if
+		if (mainWindow) {
+			if (runningFFmpegProcess) {
+				const confirm = dialog.showMessageBoxSync(mainWindow, {
+					message: `There is a job in progress. Kill the FFmpeg instance and close anyway?`,
+					type: 'warning',
+					buttons: ['Close', 'Resume'],
+					noLink: true,
+					defaultId: 1,
+					title: 'Confirm close',
+					cancelId: 1,
+				});
+				if (confirm === 1) {
+					e.preventDefault();
+					return;
+				}
+
 				if (runningFFmpegProcess.pid) {
 					const { pid } = runningFFmpegProcess;
 					treeKill(pid);
 				}
 			}
+
+			// Save window sizes
+			store.set('window.width', mainWindow.getSize()[0]);
+			store.set('window.height', mainWindow.getSize()[1]);
 		}
 	});
 
@@ -130,11 +150,8 @@ const createWindow = async () => {
  */
 
 app.on('window-all-closed', () => {
-	// Respect the OSX convention of having the application in memory even
-	// after all windows have been closed
-	if (process.platform !== 'darwin') {
-		app.quit();
-	}
+	app.quit();
+	exit(0);
 });
 
 app
@@ -172,6 +189,7 @@ ipcMain.on('pause-ffmpeg', async () => {
 		psTree(runningFFmpegProcess.pid, (err, children) => {
 			if (err) {
 				console.error(err);
+				log.error(err);
 				return;
 			}
 
@@ -181,7 +199,6 @@ ipcMain.on('pause-ffmpeg', async () => {
 				}
 
 				if (!pauseStatus) {
-					console.log(i.PID);
 					suspend(Number(i.PID));
 					pauseStatus = true;
 				} else {
@@ -206,9 +223,8 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			const workingDirectory = path.dirname(file);
 
 			// Write output header
-			event.reply('write-output', `${'='.repeat(40)}\r\n`);
+			event.reply('write-output', `${'='.repeat(80)}\r\n`);
 			event.reply('write-output', `Processing ${file}...\r\n`);
-			event.reply('write-output', `${'='.repeat(40)}\r\n`);
 
 			// Determine destination filename and check if will be overwriting
 			const destination = pieceFilename(file, args.suffix, args.format);
@@ -301,7 +317,11 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			ffmpegArguments.push(`${destination}`);
 
 			pauseStatus = false;
-			event.reply('write-output', 'ffmpeg '.concat(ffmpegArguments.join(' ')));
+			event.reply(
+				'write-output',
+				'ffmpeg '.concat(ffmpegArguments.join(' '), '\r\n')
+			);
+			event.reply('write-output', `${'='.repeat(80)}\r\n`);
 			const child: ChildProcess = spawn('ffmpeg', ffmpegArguments, {
 				detached: false,
 				cwd: path.resolve(workingDirectory),
@@ -334,4 +354,8 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 	};
 
 	next(0);
+});
+
+ipcMain.on('save-fields', async (_event, args: FFmpegParameters) => {
+	store.set('input', args);
 });

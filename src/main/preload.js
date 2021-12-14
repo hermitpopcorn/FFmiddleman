@@ -10,6 +10,8 @@ const validChannels = [
 	'write-output',
 	'one-done',
 	'all-done',
+	'set-fields',
+	'save-fields',
 ];
 
 contextBridge.exposeInMainWorld('electron', {
@@ -26,8 +28,15 @@ contextBridge.exposeInMainWorld('electron', {
 			}
 			ipcRenderer.send('process-ffmpeg', parameters);
 		},
+
 		pauseResume() {
 			ipcRenderer.send('pause-ffmpeg');
+		},
+		sendFields(parameters) {
+			if (!parameters) {
+				return;
+			}
+			ipcRenderer.send('save-fields', parameters);
 		},
 		on(channel, func) {
 			if (validChannels.includes(channel)) {
