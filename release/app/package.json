@@ -1,5 +1,9 @@
 {
 	"name": "ffmiddleman",
+	"description": "FFmpeg helper tool",
+	"author": {
+		"name": "hermitpopcorn"
+	},
 	"version": "0.1.0",
 	"main": "./dist/main/main.js",
 	"scripts": {

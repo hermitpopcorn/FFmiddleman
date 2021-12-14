@@ -11,7 +11,14 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
+import {
+	app,
+	BrowserWindow,
+	shell,
+	ipcMain,
+	dialog,
+	Notification,
+} from 'electron';
 import log from 'electron-log';
 import { ChildProcess, spawn, spawnSync } from 'child_process';
 import treeKill from 'tree-kill';
@@ -40,6 +47,10 @@ const isDevelopment =
 
 if (isDevelopment) {
 	require('electron-debug')();
+}
+
+if (process.platform === 'win32') {
+	app.setAppUserModelId('FFmiddleman');
 }
 
 const installExtensions = async () => {
@@ -346,6 +357,10 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 					next(finishedIndex + 1);
 				} else {
 					event.reply('all-done');
+					new Notification({
+						title: 'Task finish notification',
+						body: 'All processes has finished.',
+					}).show();
 				}
 			})
 			.catch((err) => {
