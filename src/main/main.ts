@@ -279,7 +279,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			}
 			if (args.additionalArguments) {
 				const splitAdditionalArguments = args.additionalArguments.split(' ');
-				ffmpegArguments.concat(splitAdditionalArguments);
+				splitAdditionalArguments.forEach((i) => ffmpegArguments.push(i));
 			}
 			ffmpegArguments.push('-y');
 			ffmpegArguments.push(`${destination}`);
