@@ -21,6 +21,9 @@ import { existsSync } from 'fs';
 import { FFmpegParameters } from './interfaces';
 import { pieceFilename, resolveHtmlPath, timecodeToSeconds } from './util';
 
+// Disable hardware acceleration
+app.disableHardwareAcceleration();
+
 let mainWindow: BrowserWindow | null = null;
 let runningFFmpegProcess: ChildProcess | null = null;
 
