@@ -14,16 +14,16 @@ declare global {
 
 const Main = () => {
 	const [files, setFiles] = useState(new Array<string>());
-	const [visibleTab, setVisibleTab] = useState('cut');
+	const [actions, setActions] = useState(new Array<string>());
 	const [inputValues, setInputValues] = useState({
 		from: '00:00:00',
 		to: '00:00:00',
-		cutSuffix: '.cut1',
 		subfileExtension: 'ass',
-		hardsubSuffix: '.hardsub',
 		preset: 'medium',
-		crf: 20,
-		hevcSuffix: '.h265',
+		crf: undefined,
+		avgBitrate: undefined,
+		bufsize: undefined,
+		suffix: '.processed',
 		additionalArguments: '',
 		format: 'mp4',
 	});
@@ -51,12 +51,14 @@ const Main = () => {
 			})
 		);
 
+		// Handle progress report
 		removeEventListeners.push(
 			window.electron.api.on('progress-total-duration', (duration: number) => {
 				setProgress({ ...progress, fileMax: duration });
 			})
 		);
 
+		// Write output to textarea
 		removeEventListeners.push(
 			window.electron.api.on('write-output', (message: string) => {
 				setOutput((prevData) => prevData + message);
@@ -81,12 +83,14 @@ const Main = () => {
 			})
 		);
 
+		// Finished one job
 		removeEventListeners.push(
 			window.electron.api.on('one-done', () => {
 				setProgress({ ...progress, jobProgress: progress.jobProgress + 1 });
 			})
 		);
 
+		// Finished all jobs
 		removeEventListeners.push(
 			window.electron.api.on('all-done', () => {
 				setProcessing(false);
@@ -94,7 +98,7 @@ const Main = () => {
 		);
 
 		return () => {
-			// remove old listener on subsequent re-renders
+			// Remove old listener on subsequent re-renders
 			removeEventListeners.forEach((remover) => {
 				remover();
 			});
@@ -172,50 +176,46 @@ const Main = () => {
 	};
 
 	const compileParameters = (): FFmpegParameters | null => {
-		let parameters: FFmpegParameters;
+		const parameters: FFmpegParameters = {
+			files,
+			suffix: inputValues.suffix,
+			additionalArguments: inputValues.additionalArguments,
+			format: inputValues.format,
+		};
 
-		switch (visibleTab) {
-			case 'cut': {
-				parameters = {
-					files,
-					cut: {
-						from: inputValues.from,
-						to: inputValues.to,
-					},
-					suffix: inputValues.cutSuffix,
-					additionalArguments: inputValues.additionalArguments,
-					format: inputValues.format,
-				};
-				return parameters;
-			}
-			case 'hardsub': {
-				parameters = {
-					files,
-					hardsub: {
-						subfileExtension: inputValues.subfileExtension,
-					},
-					suffix: inputValues.hardsubSuffix,
-					additionalArguments: inputValues.additionalArguments,
-					format: inputValues.format,
-				};
-				return parameters;
-			}
-			case 'hevc': {
-				parameters = {
-					files,
-					hevc: {
-						preset: inputValues.preset,
-						crf: inputValues.crf,
-					},
-					suffix: inputValues.hevcSuffix,
-					additionalArguments: inputValues.additionalArguments,
-					format: inputValues.format,
-				};
-				return parameters;
-			}
-			default: {
-				return null;
-			}
+		if (actions.includes('cut')) {
+			parameters.cut = {
+				from: inputValues.from,
+				to: inputValues.to,
+			};
+		}
+		if (actions.includes('hardsub')) {
+			parameters.hardsub = {
+				subfileExtension: inputValues.subfileExtension,
+			};
+		}
+		if (actions.includes('hardsub')) {
+			parameters.hardsub = {
+				subfileExtension: inputValues.subfileExtension,
+			};
+		}
+		if (actions.includes('hevc')) {
+			parameters.hevc = {
+				preset: inputValues.preset,
+				crf: inputValues.crf,
+				avgBitrate: inputValues.avgBitrate,
+				bufsize: inputValues.bufsize,
+			};
+		}
+
+		return parameters;
+	};
+
+	const toggleAction = (action: string) => {
+		if (actions.includes(action)) {
+			setActions(actions.filter((el) => el !== action));
+		} else {
+			setActions([...actions, action]);
 		}
 	};
 
@@ -250,13 +250,25 @@ const Main = () => {
 				</fieldset>
 
 				<nav className="tabs">
-					<button type="button" onClick={() => setVisibleTab('cut')}>
+					<button
+						type="button"
+						onClick={() => toggleAction('cut')}
+						className={actions.includes('cut') ? 'active' : ''}
+					>
 						Cut
 					</button>
-					<button type="button" onClick={() => setVisibleTab('hardsub')}>
+					<button
+						type="button"
+						onClick={() => toggleAction('hardsub')}
+						className={actions.includes('hardsub') ? 'active' : ''}
+					>
 						Hardsub
 					</button>
-					<button type="button" onClick={() => setVisibleTab('hevc')}>
+					<button
+						type="button"
+						onClick={() => toggleAction('hevc')}
+						className={actions.includes('hevc') ? 'active' : ''}
+					>
 						HEVC Conversion
 					</button>
 				</nav>
@@ -264,7 +276,7 @@ const Main = () => {
 				<section
 					id="tab-cut"
 					style={
-						visibleTab === 'cut' ? { display: 'block' } : { display: 'none' }
+						actions.includes('cut') ? { display: 'block' } : { display: 'none' }
 					}
 				>
 					<fieldset className="cut-from-to">
@@ -291,24 +303,12 @@ const Main = () => {
 							/>
 						</label>
 					</fieldset>
-					<fieldset>
-						<label htmlFor="cut-suffix">
-							<span>Suffix</span>
-							<input
-								name="cutSuffix"
-								id="cut-suffix"
-								type="text"
-								value={inputValues.cutSuffix}
-								onChange={handleInputChange}
-							/>
-						</label>
-					</fieldset>
 				</section>
 
 				<section
 					id="tab-hardsub"
 					style={
-						visibleTab === 'hardsub'
+						actions.includes('hardsub')
 							? { display: 'block' }
 							: { display: 'none' }
 					}
@@ -325,24 +325,14 @@ const Main = () => {
 							/>
 						</label>
 					</fieldset>
-					<fieldset>
-						<label htmlFor="hardsub-suffix">
-							Suffix
-							<input
-								name="hardsubSuffix"
-								id="hardsub-suffix"
-								type="text"
-								value={inputValues.hardsubSuffix}
-								onChange={handleInputChange}
-							/>
-						</label>
-					</fieldset>
 				</section>
 
 				<section
 					id="tab-hevc"
 					style={
-						visibleTab === 'hevc' ? { display: 'block' } : { display: 'none' }
+						actions.includes('hevc')
+							? { display: 'block' }
+							: { display: 'none' }
 					}
 				>
 					<fieldset className="hevc-settings">
@@ -375,20 +365,41 @@ const Main = () => {
 								onChange={handleInputChange}
 							/>
 						</label>
-					</fieldset>
-					<fieldset>
-						<label htmlFor="hevc-suffix">
-							<span>Suffix</span>
+						<label htmlFor="hevc-avgBitrate">
+							<span>Average Bitrate</span>
 							<input
-								name="hevcSuffix"
-								id="hevc-suffix"
+								name="avgBitrate"
+								id="hevc-avgBitrate"
 								type="text"
-								value={inputValues.hevcSuffix}
+								value={inputValues.avgBitrate}
+								onChange={handleInputChange}
+							/>
+						</label>
+						<label htmlFor="hevc-bufsize">
+							<span>Buffer Size</span>
+							<input
+								name="bufsize"
+								id="hevc-bufsize"
+								type="text"
+								value={inputValues.bufsize}
 								onChange={handleInputChange}
 							/>
 						</label>
 					</fieldset>
 				</section>
+
+				<fieldset>
+					<label htmlFor="suffix">
+						<span>Suffix</span>
+						<input
+							name="suffix"
+							id="suffix"
+							type="text"
+							value={inputValues.suffix}
+							onChange={handleInputChange}
+						/>
+					</label>
+				</fieldset>
 
 				<fieldset>
 					<label htmlFor="additional-arguments">

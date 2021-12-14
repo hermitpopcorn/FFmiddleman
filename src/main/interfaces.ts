@@ -10,6 +10,8 @@ export interface FFmpegParameters {
 	hevc?: {
 		preset?: string;
 		crf?: number;
+		avgBitrate?: string;
+		bufsize?: string;
 	};
 	suffix?: string;
 	additionalArguments?: string;

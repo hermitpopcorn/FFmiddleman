@@ -42,6 +42,9 @@ nav.tabs {
 		flex-grow: 1;
 		flex-shrink: 1;
 		flex-basis: 0;
+		&.active {
+			font-weight: bold;
+		}
 	}
 }
 
@@ -63,6 +66,10 @@ fieldset {
 		}
 	}
 	&.hevc-settings {
+		margin-top: calc(-1 * var(--gap));
+		> * {
+			margin-top: var(--gap);
+		}
 		select {
 			width: 100%;
 		}

@@ -193,6 +193,7 @@ ipcMain.on('pause-ffmpeg', async () => {
 });
 
 ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
+	// Iterate files
 	const next = (index: number) => {
 		const promise = new Promise<number>((resolve, reject) => {
 			if (!mainWindow) {
@@ -208,7 +209,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			event.reply('write-output', `Processing ${file}...\r\n`);
 			event.reply('write-output', `${'='.repeat(40)}\r\n`);
 
-			// Determine destination filename and check
+			// Determine destination filename and check if will be overwriting
 			const destination = pieceFilename(file, args.suffix, args.format);
 			const destinationPath = path.join(workingDirectory, destination);
 			if (existsSync(destinationPath)) {
@@ -274,8 +275,6 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			if (args.hevc) {
 				ffmpegArguments.push('-c:v');
 				ffmpegArguments.push('libx265');
-				ffmpegArguments.push('-c:a');
-				ffmpegArguments.push('copy');
 				if (args.hevc.preset) {
 					ffmpegArguments.push('-preset');
 					ffmpegArguments.push(String(args.hevc.preset));
@@ -283,6 +282,14 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 				if (args.hevc.crf) {
 					ffmpegArguments.push('-crf');
 					ffmpegArguments.push(String(args.hevc.crf));
+				}
+				if (args.hevc.avgBitrate) {
+					ffmpegArguments.push('-b:v');
+					ffmpegArguments.push(String(args.hevc.avgBitrate));
+				}
+				if (args.hevc.bufsize) {
+					ffmpegArguments.push('-bufsize');
+					ffmpegArguments.push(String(args.hevc.bufsize));
 				}
 			}
 			if (args.additionalArguments) {
@@ -293,6 +300,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			ffmpegArguments.push(`${destination}`);
 
 			pauseStatus = false;
+			event.reply('write-output', 'ffmpeg '.concat(ffmpegArguments.join(' ')));
 			const child: ChildProcess = spawn('ffmpeg', ffmpegArguments, {
 				detached: false,
 				cwd: path.resolve(workingDirectory),
