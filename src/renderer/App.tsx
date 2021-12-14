@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { MemoryRouter as Router, Switch, Route } from 'react-router-dom';
 import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from 'react';
-import { timecodeToSeconds } from './util';
+import { timecodeToSeconds } from '../main/helper';
 import { FFmpegParameters } from '../main/interfaces';
 import './App.scss';
 

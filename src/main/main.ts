@@ -19,7 +19,8 @@ import psTree from 'ps-tree';
 import { suspend, resume } from 'ntsuspend';
 import { existsSync } from 'fs';
 import { FFmpegParameters } from './interfaces';
-import { pieceFilename, resolveHtmlPath, timecodeToSeconds } from './util';
+import { pieceFilename, resolveHtmlPath } from './util';
+import { timecodeToSeconds } from './helper';
 
 // Disable hardware acceleration
 app.disableHardwareAcceleration();
