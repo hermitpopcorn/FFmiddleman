@@ -6,7 +6,23 @@ html, body, fieldset { padding: 0; margin: 0; border: 0; }
 
 body {
 	font-family: sans-serif;
+}
+
+.container {
+	display: flex;
+	flex-direction: column;
+	flex-wrap: nowrap;
+	justify-content: center;
+	align-items: stretch;
+	height: calc(100vh - (var(--gap) * 2));
 	padding: var(--gap);
+	> * {
+		flex-shrink: 0;
+		flex-grow: 0;
+	}
+	> .v-fit {
+		flex-grow: 1;
+	}
 }
 
 button {
@@ -90,7 +106,10 @@ input, textarea {
 	box-sizing: border-box;
 }
 
+fieldset.v-fit {
+	height: calc(100% - var(--gap));
+}
 textarea.output {
-	height: 25vh;
+	height: 100%;
 	font-size: 0.8em;
 }

@@ -230,222 +230,230 @@ const Main = () => {
 	};
 
 	return (
-		<div>
-			<fieldset className="file-selector">
-				<select multiple onKeyUp={handleDeletion}>
-					{files.map((file, index) => {
-						// eslint-disable-next-line react/no-array-index-key
-						return <option key={index}>{file}</option>;
-					})}
-				</select>
-				<button
-					type="button"
-					onClick={() => {
-						window.electron.api.openFileDialog();
-					}}
+		<div className="container">
+			<div className="v-fixed">
+				<fieldset className="file-selector">
+					<select multiple onKeyUp={handleDeletion}>
+						{files.map((file, index) => {
+							// eslint-disable-next-line react/no-array-index-key
+							return <option key={index}>{file}</option>;
+						})}
+					</select>
+					<button
+						type="button"
+						onClick={() => {
+							window.electron.api.openFileDialog();
+						}}
+					>
+						Select File
+					</button>
+				</fieldset>
+
+				<nav className="tabs">
+					<button type="button" onClick={() => setVisibleTab('cut')}>
+						Cut
+					</button>
+					<button type="button" onClick={() => setVisibleTab('hardsub')}>
+						Hardsub
+					</button>
+					<button type="button" onClick={() => setVisibleTab('hevc')}>
+						HEVC Conversion
+					</button>
+				</nav>
+
+				<section
+					id="tab-cut"
+					style={
+						visibleTab === 'cut' ? { display: 'block' } : { display: 'none' }
+					}
 				>
-					Select File
-				</button>
-			</fieldset>
+					<fieldset className="cut-from-to">
+						<label htmlFor="cut-from">
+							<span>From</span>
+							<input
+								name="from"
+								id="cut-from"
+								type="text"
+								value={inputValues.from}
+								onChange={handleInputChange}
+								onBlur={handleTimecodeInputBlur}
+							/>
+						</label>
+						<label htmlFor="cut-to">
+							<span>To</span>
+							<input
+								name="to"
+								id="cut-to"
+								type="text"
+								value={inputValues.to}
+								onChange={handleInputChange}
+								onBlur={handleTimecodeInputBlur}
+							/>
+						</label>
+					</fieldset>
+					<fieldset>
+						<label htmlFor="cut-suffix">
+							<span>Suffix</span>
+							<input
+								name="cutSuffix"
+								id="cut-suffix"
+								type="text"
+								value={inputValues.cutSuffix}
+								onChange={handleInputChange}
+							/>
+						</label>
+					</fieldset>
+				</section>
 
-			<nav className="tabs">
-				<button type="button" onClick={() => setVisibleTab('cut')}>
-					Cut
-				</button>
-				<button type="button" onClick={() => setVisibleTab('hardsub')}>
-					Hardsub
-				</button>
-				<button type="button" onClick={() => setVisibleTab('hevc')}>
-					HEVC Conversion
-				</button>
-			</nav>
+				<section
+					id="tab-hardsub"
+					style={
+						visibleTab === 'hardsub'
+							? { display: 'block' }
+							: { display: 'none' }
+					}
+				>
+					<fieldset>
+						<label htmlFor="hardsub-extension">
+							Subtitle file extension
+							<input
+								name="subfileExtension"
+								id="hardsub-subfile-extension"
+								type="text"
+								value={inputValues.subfileExtension}
+								onChange={handleInputChange}
+							/>
+						</label>
+					</fieldset>
+					<fieldset>
+						<label htmlFor="hardsub-suffix">
+							Suffix
+							<input
+								name="hardsubSuffix"
+								id="hardsub-suffix"
+								type="text"
+								value={inputValues.hardsubSuffix}
+								onChange={handleInputChange}
+							/>
+						</label>
+					</fieldset>
+				</section>
 
-			<section
-				id="tab-cut"
-				style={
-					visibleTab === 'cut' ? { display: 'block' } : { display: 'none' }
-				}
-			>
-				<fieldset className="cut-from-to">
-					<label htmlFor="cut-from">
-						<span>From</span>
-						<input
-							name="from"
-							id="cut-from"
-							type="text"
-							value={inputValues.from}
-							onChange={handleInputChange}
-							onBlur={handleTimecodeInputBlur}
-						/>
-					</label>
-					<label htmlFor="cut-to">
-						<span>To</span>
-						<input
-							name="to"
-							id="cut-to"
-							type="text"
-							value={inputValues.to}
-							onChange={handleInputChange}
-							onBlur={handleTimecodeInputBlur}
-						/>
-					</label>
-				</fieldset>
+				<section
+					id="tab-hevc"
+					style={
+						visibleTab === 'hevc' ? { display: 'block' } : { display: 'none' }
+					}
+				>
+					<fieldset className="hevc-settings">
+						<label htmlFor="hevc-preset">
+							<span>Preset</span>
+							<select
+								name="preset"
+								id="hevc-preset"
+								value={inputValues.preset}
+								onChange={handleInputChange}
+							>
+								<option value="ultrafast">ultrafast</option>
+								<option value="superfast">superfast</option>
+								<option value="veryfast">veryfast</option>
+								<option value="faster">faster</option>
+								<option value="fast">fast</option>
+								<option value="medium">medium</option>
+								<option value="slow">slow</option>
+								<option value="slower">slower</option>
+								<option value="veryslow ">veryslow </option>
+							</select>
+						</label>
+						<label htmlFor="hevc-crf">
+							<span>CRF</span>
+							<input
+								name="crf"
+								id="hevc-crf"
+								type="text"
+								value={inputValues.crf}
+								onChange={handleInputChange}
+							/>
+						</label>
+					</fieldset>
+					<fieldset>
+						<label htmlFor="hevc-suffix">
+							<span>Suffix</span>
+							<input
+								name="hevcSuffix"
+								id="hevc-suffix"
+								type="text"
+								value={inputValues.hevcSuffix}
+								onChange={handleInputChange}
+							/>
+						</label>
+					</fieldset>
+				</section>
+
 				<fieldset>
-					<label htmlFor="cut-suffix">
-						<span>Suffix</span>
+					<label htmlFor="additional-arguments">
+						Additional arguments
 						<input
-							name="cutSuffix"
-							id="cut-suffix"
+							name="additionalArguments"
+							id="additional-arguments"
 							type="text"
-							value={inputValues.cutSuffix}
+							value={inputValues.additionalArguments}
 							onChange={handleInputChange}
 						/>
 					</label>
 				</fieldset>
-			</section>
 
-			<section
-				id="tab-hardsub"
-				style={
-					visibleTab === 'hardsub' ? { display: 'block' } : { display: 'none' }
-				}
-			>
 				<fieldset>
-					<label htmlFor="hardsub-extension">
-						Subtitle file extension
+					<label htmlFor="format">
+						Format
 						<input
-							name="subfileExtension"
-							id="hardsub-subfile-extension"
+							name="format"
+							id="format"
 							type="text"
-							value={inputValues.subfileExtension}
+							value={inputValues.format}
 							onChange={handleInputChange}
 						/>
 					</label>
 				</fieldset>
-				<fieldset>
-					<label htmlFor="hardsub-suffix">
-						Suffix
-						<input
-							name="hardsubSuffix"
-							id="hardsub-suffix"
-							type="text"
-							value={inputValues.hardsubSuffix}
-							onChange={handleInputChange}
-						/>
-					</label>
-				</fieldset>
-			</section>
+			</div>
 
-			<section
-				id="tab-hevc"
-				style={
-					visibleTab === 'hevc' ? { display: 'block' } : { display: 'none' }
-				}
-			>
-				<fieldset className="hevc-settings">
-					<label htmlFor="hevc-preset">
-						<span>Preset</span>
-						<select
-							name="preset"
-							id="hevc-preset"
-							value={inputValues.preset}
-							onChange={handleInputChange}
-						>
-							<option value="ultrafast">ultrafast</option>
-							<option value="superfast">superfast</option>
-							<option value="veryfast">veryfast</option>
-							<option value="faster">faster</option>
-							<option value="fast">fast</option>
-							<option value="medium">medium</option>
-							<option value="slow">slow</option>
-							<option value="slower">slower</option>
-							<option value="veryslow ">veryslow </option>
-						</select>
-					</label>
-					<label htmlFor="hevc-crf">
-						<span>CRF</span>
-						<input
-							name="crf"
-							id="hevc-crf"
-							type="text"
-							value={inputValues.crf}
-							onChange={handleInputChange}
-						/>
-					</label>
-				</fieldset>
-				<fieldset>
-					<label htmlFor="hevc-suffix">
-						<span>Suffix</span>
-						<input
-							name="hevcSuffix"
-							id="hevc-suffix"
-							type="text"
-							value={inputValues.hevcSuffix}
-							onChange={handleInputChange}
-						/>
-					</label>
-				</fieldset>
-			</section>
-
-			<fieldset>
-				<label htmlFor="additional-arguments">
-					Additional arguments
-					<input
-						name="additionalArguments"
-						id="additional-arguments"
-						type="text"
-						value={inputValues.additionalArguments}
-						onChange={handleInputChange}
+			<div className="v-fit">
+				<fieldset className="v-fit">
+					<textarea
+						readOnly
+						ref={outputTextArea}
+						className="output"
+						value={output}
 					/>
-				</label>
-			</fieldset>
+				</fieldset>
+			</div>
 
-			<fieldset>
-				<label htmlFor="format">
-					Format
-					<input
-						name="format"
-						id="format"
-						type="text"
-						value={inputValues.format}
-						onChange={handleInputChange}
-					/>
-				</label>
-			</fieldset>
-
-			<fieldset>
-				<textarea
-					readOnly
-					ref={outputTextArea}
-					className="output"
-					value={output}
-				/>
-			</fieldset>
-
-			<fieldset className="submit">
-				<button
-					id="pause"
-					type="button"
-					onClick={() => {
-						window.electron.api.pauseResume();
-					}}
-				>
-					⏯
-				</button>
-				<progress value={progress.fileProgress} max={progress.fileMax} />
-				<progress value={progress.jobProgress} max={progress.jobMax} />
-				<button
-					id="process"
-					type="button"
-					disabled={files.length < 1 || processing}
-					onClick={() => {
-						readyProcessUI();
-						window.electron.api.process(compileParameters());
-					}}
-				>
-					Process
-				</button>
-			</fieldset>
+			<div className="v-fixed">
+				<fieldset className="submit">
+					<button
+						id="pause"
+						type="button"
+						onClick={() => {
+							window.electron.api.pauseResume();
+						}}
+					>
+						⏯
+					</button>
+					<progress value={progress.fileProgress} max={progress.fileMax} />
+					<progress value={progress.jobProgress} max={progress.jobMax} />
+					<button
+						id="process"
+						type="button"
+						disabled={files.length < 1 || processing}
+						onClick={() => {
+							readyProcessUI();
+							window.electron.api.process(compileParameters());
+						}}
+					>
+						Process
+					</button>
+				</fieldset>
+			</div>
 		</div>
 	);
 };
