@@ -24,7 +24,7 @@ const Main = () => {
 		avgBitrate: '',
 		bufsize: '',
 		suffix: '.processed',
-		additionalArguments: '',
+		additionalArguments: '-map 0',
 		format: 'mp4',
 	});
 	const [output, setOutput] = useState('');
