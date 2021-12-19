@@ -22,7 +22,6 @@ import {
 import log from 'electron-log';
 import { ChildProcess, spawn, spawnSync } from 'child_process';
 import treeKill from 'tree-kill';
-import psTree from 'ps-tree';
 import { suspend, resume } from 'ntsuspend';
 import { existsSync } from 'fs';
 import { exit } from 'process';
@@ -197,27 +196,12 @@ ipcMain.on('open-file-dialog', async (event) => {
 let pauseStatus = false;
 ipcMain.on('pause-ffmpeg', async () => {
 	if (runningFFmpegProcess?.pid) {
-		psTree(runningFFmpegProcess.pid, (err, children) => {
-			if (err) {
-				console.error(err);
-				log.error(err);
-				return;
-			}
-
-			children.forEach((i) => {
-				if (!i.COMMAND.match(/ffmpeg/)) {
-					return;
-				}
-
-				if (!pauseStatus) {
-					suspend(Number(i.PID));
-					pauseStatus = true;
-				} else {
-					resume(Number(i.PID));
-					pauseStatus = false;
-				}
-			});
-		});
+		if (!pauseStatus) {
+			suspend(runningFFmpegProcess.pid);
+		} else {
+			resume(runningFFmpegProcess.pid);
+		}
+		pauseStatus = !pauseStatus;
 	}
 });
 
