@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { MemoryRouter as Router, Switch, Route } from 'react-router-dom';
 import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from 'react';
-import { timecodeToSeconds } from '../main/helper';
+import { timecodeToSeconds, formatOutputMessage } from '../main/helper';
 import { FFmpegParameters } from '../main/interfaces';
 import './App.scss';
 
@@ -230,7 +230,7 @@ const Main = () => {
 		// Write output to textarea
 		removeEventListeners.push(
 			window.electron.api.on('write-output', (message: string) => {
-				setOutput((prevData) => prevData + message);
+				setOutput((prevData) => formatOutputMessage(prevData, message));
 
 				// Check for progress
 				const checkProgress = message.match(
