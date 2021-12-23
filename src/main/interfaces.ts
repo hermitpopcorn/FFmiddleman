@@ -1,5 +1,6 @@
 export interface FFmpegParameters {
 	files: string[];
+	destination?: string;
 	cut?: {
 		from: string;
 		to: string;

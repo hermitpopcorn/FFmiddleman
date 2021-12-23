@@ -16,6 +16,7 @@ const Main = () => {
 	const [files, setFiles] = useState(new Array<string>());
 	const [actions, setActions] = useState(new Array<string>());
 	const [inputValues, setInputValues] = useState({
+		destination: '',
 		from: '00:00:00',
 		to: '00:00:00',
 		subfileExtension: 'ass',
@@ -42,6 +43,7 @@ const Main = () => {
 	const compileParameters = (getAll = false): FFmpegParameters | null => {
 		const parameters: FFmpegParameters = {
 			files,
+			destination: inputValues.destination,
 			prefix: inputValues.prefix,
 			suffix: inputValues.suffix,
 			additionalArguments: inputValues.additionalArguments,
@@ -230,6 +232,16 @@ const Main = () => {
 			})
 		);
 
+		// Handle destination directory
+		removeEventListeners.push(
+			window.electron.api.on(
+				'open-destination-dialog',
+				(destination: string) => {
+					setInputValues({ ...inputValues, destination });
+				}
+			)
+		);
+
 		// Handle progress report
 		removeEventListeners.push(
 			window.electron.api.on('progress-total-duration', (duration: number) => {
@@ -301,6 +313,22 @@ const Main = () => {
 						}}
 					>
 						Select File
+					</button>
+					<input
+						name="destination"
+						type="text"
+						id="destination"
+						value={inputValues.destination}
+						onChange={handleInputChange}
+						onBlur={handleInputBlur}
+					/>
+					<button
+						type="button"
+						onClick={() => {
+							window.electron.api.openDestinationDialog();
+						}}
+					>
+						Set Destination Folder
 					</button>
 				</fieldset>
 

@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 const validChannels = [
 	'add-files',
 	'open-file-dialog',
+	'open-destination-dialog',
 	'process-ffmpeg',
 	'pause-ffmpeg',
 	'progress-total-duration',
@@ -21,6 +22,9 @@ contextBridge.exposeInMainWorld('electron', {
 		},
 		openFileDialog() {
 			ipcRenderer.send('open-file-dialog');
+		},
+		openDestinationDialog() {
+			ipcRenderer.send('open-destination-dialog');
 		},
 		process(parameters) {
 			if (!parameters) {

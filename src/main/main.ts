@@ -23,7 +23,7 @@ import log from 'electron-log';
 import { ChildProcess, spawn, spawnSync } from 'child_process';
 import treeKill from 'tree-kill';
 import { suspend, resume } from 'ntsuspend';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { exit } from 'process';
 import { FFmpegParameters } from './interfaces';
 import { pieceFilename, resolveHtmlPath } from './util';
@@ -194,6 +194,23 @@ ipcMain.on('open-file-dialog', async (event) => {
 		});
 });
 
+ipcMain.on('open-destination-dialog', async (event) => {
+	dialog
+		.showOpenDialog({
+			properties: ['openDirectory'],
+		})
+		.then((result) => {
+			if (result.canceled) {
+				return;
+			}
+			event.reply('open-destination-dialog', result.filePaths.shift());
+		})
+		.catch((err) => {
+			console.error(err);
+			log.error(err);
+		});
+});
+
 let pauseStatus = false;
 ipcMain.on('pause-ffmpeg', async () => {
 	if (runningFFmpegProcess?.pid) {
@@ -222,14 +239,24 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			event.reply('write-output', `${'='.repeat(80)}\r\n`);
 			event.reply('write-output', `Processing ${file}...\r\n`);
 
+			// If destination folder is specified, check for existence and create if it doesn't
+			if (args.destination) {
+				if (!existsSync(args.destination)) {
+					mkdirSync(args.destination, { recursive: true });
+				}
+			}
+
 			// Determine destination filename and check if will be overwriting
-			const destination = pieceFilename(
+			const destinationFile = pieceFilename(
 				file,
 				args.prefix,
 				args.suffix,
 				args.format
 			);
-			const destinationPath = path.join(workingDirectory, destination);
+			const destinationPath = path.join(
+				args.destination ? args.destination : workingDirectory,
+				destinationFile
+			);
 			if (existsSync(destinationPath)) {
 				const confirm = dialog.showMessageBoxSync(mainWindow, {
 					message: `Destination file ${destinationPath} already exists. Overwrite?`,
@@ -319,7 +346,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 				splitAdditionalArguments.forEach((i) => ffmpegArguments.push(i));
 			}
 			ffmpegArguments.push('-y');
-			ffmpegArguments.push(`${destination}`);
+			ffmpegArguments.push(destinationPath);
 
 			pauseStatus = false;
 			event.reply(
