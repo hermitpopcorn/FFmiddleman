@@ -44,6 +44,9 @@ const store = new Store({
 						preset: {
 							type: 'string',
 						},
+						tune: {
+							type: 'string',
+						},
 						crf: {
 							type: 'number',
 						},
@@ -54,6 +57,9 @@ const store = new Store({
 							type: 'string',
 						},
 					},
+				},
+				prefix: {
+					type: 'string',
 				},
 				suffix: {
 					type: 'string',

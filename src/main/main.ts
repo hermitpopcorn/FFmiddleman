@@ -102,6 +102,7 @@ const createWindow = async () => {
 			defaults.cut = store.get('input.cut');
 			defaults.hardsub = store.get('input.hardsub');
 			defaults.hevc = store.get('input.hevc');
+			defaults.prefix = store.get('input.prefix');
 			defaults.suffix = store.get('input.suffix');
 			defaults.additionalArguments = store.get('input.additionalArguments');
 			defaults.format = store.get('input.format');
@@ -222,7 +223,12 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 			event.reply('write-output', `Processing ${file}...\r\n`);
 
 			// Determine destination filename and check if will be overwriting
-			const destination = pieceFilename(file, args.suffix, args.format);
+			const destination = pieceFilename(
+				file,
+				args.prefix,
+				args.suffix,
+				args.format
+			);
 			const destinationPath = path.join(workingDirectory, destination);
 			if (existsSync(destinationPath)) {
 				const confirm = dialog.showMessageBoxSync(mainWindow, {
@@ -290,6 +296,10 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 				if (args.hevc.preset) {
 					ffmpegArguments.push('-preset');
 					ffmpegArguments.push(String(args.hevc.preset));
+				}
+				if (args.hevc.tune) {
+					ffmpegArguments.push('-tune');
+					ffmpegArguments.push(String(args.hevc.tune));
 				}
 				if (args.hevc.crf) {
 					ffmpegArguments.push('-crf');

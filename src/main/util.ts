@@ -19,10 +19,16 @@ if (process.env.NODE_ENV === 'development') {
 
 export const pieceFilename = (
 	filename: string,
+	prefix?: string | null,
 	suffix?: string | null,
 	extension?: string | null
 ): string => {
 	const pieces = new Array<string>();
+
+	if (prefix) {
+		pieces.push(prefix);
+	}
+
 	pieces.push(path.parse(filename).name);
 
 	if (suffix) {

@@ -19,10 +19,12 @@ const Main = () => {
 		from: '00:00:00',
 		to: '00:00:00',
 		subfileExtension: 'ass',
-		preset: 'medium',
+		preset: '',
+		tune: '',
 		crf: 0,
 		avgBitrate: '',
 		bufsize: '',
+		prefix: '',
 		suffix: '.processed',
 		additionalArguments: '-map 0',
 		format: 'mp4',
@@ -40,6 +42,7 @@ const Main = () => {
 	const compileParameters = (getAll = false): FFmpegParameters | null => {
 		const parameters: FFmpegParameters = {
 			files,
+			prefix: inputValues.prefix,
 			suffix: inputValues.suffix,
 			additionalArguments: inputValues.additionalArguments,
 			format: inputValues.format,
@@ -59,6 +62,7 @@ const Main = () => {
 		if (actions.includes('hevc') || getAll) {
 			parameters.hevc = {
 				preset: inputValues.preset,
+				tune: inputValues.tune,
 				crf: Number(inputValues.crf),
 				avgBitrate: inputValues.avgBitrate,
 				bufsize: inputValues.bufsize,
@@ -186,6 +190,9 @@ const Main = () => {
 				if (defaults.hevc?.preset) {
 					newInputValues.preset = defaults.hevc.preset;
 				}
+				if (defaults.hevc?.tune) {
+					newInputValues.tune = defaults.hevc.tune;
+				}
 				if (defaults.hevc?.crf) {
 					newInputValues.crf = defaults.hevc.crf;
 				}
@@ -194,6 +201,9 @@ const Main = () => {
 				}
 				if (defaults.hevc?.bufsize) {
 					newInputValues.bufsize = defaults.hevc.bufsize;
+				}
+				if (defaults.prefix) {
+					newInputValues.prefix = defaults.prefix;
 				}
 				if (defaults.suffix) {
 					newInputValues.suffix = defaults.suffix;
@@ -397,6 +407,7 @@ const Main = () => {
 								onChange={handleInputChange}
 								onBlur={handleInputBlur}
 							>
+								<option value="">omit</option>
 								<option value="ultrafast">ultrafast</option>
 								<option value="superfast">superfast</option>
 								<option value="veryfast">veryfast</option>
@@ -406,6 +417,24 @@ const Main = () => {
 								<option value="slow">slow</option>
 								<option value="slower">slower</option>
 								<option value="veryslow ">veryslow </option>
+							</select>
+						</label>
+						<label htmlFor="hevc-tune">
+							<span>Tune</span>
+							<select
+								name="tune"
+								id="hevc-tune"
+								value={inputValues.tune}
+								onChange={handleInputChange}
+								onBlur={handleInputBlur}
+							>
+								<option value="">omit</option>
+								<option value="animation">animation</option>
+								<option value="grain">grain</option>
+								<option value="fastdecode">fastdecode</option>
+								<option value="zerolatency">zerolatency</option>
+								<option value="psnr">psnr</option>
+								<option value="ssim ">ssim </option>
 							</select>
 						</label>
 						<label htmlFor="hevc-crf">
@@ -445,6 +474,17 @@ const Main = () => {
 				</section>
 
 				<fieldset>
+					<label htmlFor="prefix">
+						<span>Prefix</span>
+						<input
+							name="prefix"
+							id="prefix"
+							type="text"
+							value={inputValues.prefix}
+							onChange={handleInputChange}
+							onBlur={handleInputBlur}
+						/>
+					</label>
 					<label htmlFor="suffix">
 						<span>Suffix</span>
 						<input
