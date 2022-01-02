@@ -312,6 +312,7 @@ ipcMain.on('process-ffmpeg', async (event, args: FFmpegParameters) => {
 				const subfile = pieceFilename(
 					file,
 					null,
+					null,
 					args.hardsub.subfileExtension
 				);
 				ffmpegArguments.push('-vf');
